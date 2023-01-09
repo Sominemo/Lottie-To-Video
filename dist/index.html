@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lottie to Video</title>
+    <meta name="description" content="Convert Lottie animations and Telegram stickers to videos in browser">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.10.1/lottie_canvas.min.js"></script>
+    <script src="rlottie-dist/main.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: sans-serif;
+        }
+
+        .result-block {
+            display: flex;
+            align-items: flex-end;
+            margin: 10px;
+        }
+
+        .button {
+            text-decoration: none;
+            color: white;
+            background: #4e4e91;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 10px;
+            margin-bottom: 0;
+            border: 0;
+            cursor: pointer;
+        }
+
+        .result-block video {
+            background-image: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        td:first-child {
+            padding-right: 20px;
+            vertical-align: top;
+        }
+
+        #chooser {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Lottie to Video</h1>
+    <p>
+    <ul>
+        <li>Please use most recent versions of browsers. Chromium is most recommended</li>
+        <li>If your browser doesn't support VP9, VP8 is your best choice
+        </li>
+        <li>VP8 and VP9 are the formats that support transparency</li>
+        <li>All modern browsers support transparent VP8 playback. You may use VP8 codec for better playback
+            compatibility</li>
+        <li>Warning! Firefox doesn't support encoding with transparency</li>
+        <li>Firefox and Safari don't support "Never use rLottie" option</li>
+        <li>On Firefox and Safari, you <b>must</b> specify dimensions manually for "Use rLottie" mode for TGS files</li>
+        <li>If you are using a browser where automatic size detection
+            doesn't work, remember that stickers are 512x512px, while emojis are 100x100px</li>
+    </ul>
+    </p>
+    <table>
+        <tr>
+            <td>Redefine dimensions:</td>
+            <td><input type="number" id="width" placeholder="Width" style="width: 100px;"> ×
+                <input type="number" id="height" placeholder="Height" style="width: 100px;">
+            </td>
+        </tr>
+        <tr>
+            <td>Framerate:</td>
+            <td><input type="number" id="framerate" placeholder="Autodetect" style="width: 100px;"></td>
+        </tr>
+        <tr>
+            <td>Speed:</td>
+            <td><input type="number" id="speed" placeholder="Normal: 1" style="width: 100px;"></td>
+        </tr>
+        <tr>
+            <td>Formats supported by your browser:</td>
+            <td>
+                <select id="formats"></select>
+            </td>
+        </tr>
+        <tr>
+            <td>Or enter codec manually:</td>
+            <td><input type="text" id="mimetype" value="video/webm;codecs=&quot;vp9&quot;" spellcheck="false">
+                <input type="text" id="extension" value=".webm" style="width: 100px;" placeholder=".ext"
+                    spellcheck="false">
+            </td>
+        </tr>
+        <tr>
+            <td>TGS Renderer:</td>
+            <td>
+                <select id="renderer">
+                    <option value="1">Use rLottie</option>
+                    <option value="0">Never use rLottie</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Video Bitrate:</td>
+            <td>
+                <input type="number" id="bitrate" value="5120" style="width: 100px;"> kbps
+            </td>
+        </tr>
+        <tr>
+            <td>File:</td>
+            <td>
+                <button id="chooser" class="button">Choose file</button>
+            </td>
+        </tr>
+    </table>
+    <h2>Info</h2>
+    <p id="animation"></p>
+    <h2>Render preview</h2>
+    <p>
+        <span id="progress"></span><br>
+        <canvas id="canvas"></canvas>
+    </p>
+    <div id="results">
+        <h2>Results</h2>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

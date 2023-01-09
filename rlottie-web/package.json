@@ -1,0 +1,22 @@
+{
+    "name": "rlottie-web",
+    "version": "1.0.0",
+    "main": "src/RLottie.ts",
+    "scripts": {
+        "build": "webpack"
+    },
+    "dependencies": {
+        "pako": "^2.1.0"
+    },
+    "engines": {
+        "node": "^18",
+        "npm": "^9"
+    },
+    "devDependencies": {
+        "ts-loader": "^9.4.2",
+        "typescript": "^4.9.4",
+        "webpack": "^5.75.0",
+        "webpack-cli": "^5.0.1",
+        "script-loader": "^0.7.2"
+    }
+}
