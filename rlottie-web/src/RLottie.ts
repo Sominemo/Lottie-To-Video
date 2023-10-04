@@ -239,6 +239,30 @@ class RLottie {
         }
     }
 
+    async frameForcePaint(frameNumber, containerId?: string) {
+        for (const containerData of this.containers) {
+            const containerInfo = containerData[1];
+            const { canvas, ctx } = containerInfo;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let frame = this.getFrame(frameNumber);
+            if (!frame || frame === WAITING) {
+                frame = (await new Promise((resolve) => {
+                    this.requestFrame(frameNumber, (n, bitmap) => {
+                        resolve(bitmap as ImageBitmap);
+                    });
+                })) as ImageBitmap;
+            }
+
+            ctx.drawImage(
+                frame,
+                containerInfo.coords.x,
+                containerInfo.coords.y
+            );
+        }
+    }
+
     private addContainer(
         containerId: string,
         container: HTMLDivElement | HTMLCanvasElement,
@@ -597,12 +621,16 @@ class RLottie {
         return this.frames[frameIndex];
     }
 
-    private requestFrame(frameIndex: number) {
+    private requestFrame(frameIndex: number, callback?: Function) {
         this.frames[frameIndex] = WAITING;
 
         workers[this.workerIndex].request({
             name: "renderFrames",
-            args: [this.id, frameIndex, this.onFrameLoad.bind(this)],
+            args: [
+                this.id,
+                frameIndex,
+                callback ?? this.onFrameLoad.bind(this),
+            ],
         });
     }
 

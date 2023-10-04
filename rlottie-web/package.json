@@ -6,6 +6,7 @@
         "build": "webpack"
     },
     "dependencies": {
+        "jszip": "^3.10.1",
         "pako": "^2.1.0"
     },
     "engines": {

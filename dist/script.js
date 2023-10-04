@@ -38,23 +38,30 @@ const rLottieShim = {
         animation.innerHTML =
             "rLottie is loading the animation and pre-rendering it as a first pass...";
         return new Promise((resolve) => {
-            let onEndedCallback = () => {};
+            let onEndedCallback = () => { };
+
             const l = RLottie.init(
                 "tgs",
                 canvas,
                 async () => {
+
                     l.play(true);
                     await new Promise((r) => {
                         onEndedCallback = () => r();
                     });
-                    onEndedCallback = () => {};
+                    onEndedCallback = () => { };
 
                     const obj = {
+                        isRLottie: true,
                         setSpeed: (speed) => l.setSpeed(speed),
                         frameRate: 60,
                         play: () => l.play(true),
-                        getDuration: (inSeconds) =>
-                            inSeconds ? l.framesCount / 60 : l.framesCount,
+                        getDuration: (inFrames) =>
+                            inFrames ? l.framesCount : l.framesCount / 60,
+                        goToAndStop: async (frame, isFrame) => {
+                            l.pause();
+                            await l.frameForcePaint(frame);
+                        },
                     };
 
                     Object.defineProperty(obj, "onComplete", {
@@ -64,7 +71,7 @@ const rLottieShim = {
                     });
 
                     Object.defineProperty(obj, "onEnterFrame", {
-                        set: (callback) => {},
+                        set: (callback) => { },
                     });
 
                     resolve(obj);
@@ -75,7 +82,7 @@ const rLottieShim = {
                     noLoop: true,
                     size: params.size,
                 },
-                params.container,
+                params.customColor,
                 () => onEndedCallback()
             );
         });
@@ -104,8 +111,8 @@ async function recorder(json, name, tgsLink, { w, h } = {}) {
             `Estimated duration: ${l.getDuration().toFixed(2)}s ` +
             (speed.value
                 ? `[render duration: ${(l.getDuration() / speed.value).toFixed(
-                      2
-                  )}s]`
+                    2
+                )}s]`
                 : "") +
             ` (${l.getDuration(true)} frames, ${l.frameRate} fps)` +
             (tgsLink === true
@@ -120,30 +127,65 @@ async function recorder(json, name, tgsLink, { w, h } = {}) {
     startRecording();
     l.play();
 
+    const pngBlobs = [];
+
     function startRecording() {
-        const chunks = [];
-        const stream = canvas.captureStream(
-            framerate.value ? framerate.value : l.frameRate
-        );
-        const rec = new MediaRecorder(stream, {
-            mimeType: mimetype.value,
-            videoBitsPerSecond: bitrate.value * 1024,
-        });
+        if (mimetype.value === "image/png") {
+            const frames = l.getDuration(true) - (l.isRLottie ? 0 : 1);
+            let currentFrame = 0;
 
-        rec.ondataavailable = (e) => chunks.push(e.data);
-        rec.onstop = (e) =>
-            exportFile(new Blob(chunks, { type: mimetype.value }), name);
-        l.onComplete = () => {
-            progress.innerText = "Done!";
-            rec.stop();
-        };
-        l.onEnterFrame = (e) => {
-            progress.innerText = `${e.currentTime.toFixed(0)} / ${
-                e.totalTime
-            } frames (${((e.currentTime / e.totalTime) * 100).toFixed(2)}%)`;
-        };
+            l.onEnterFrame = (e) => {
+                progress.innerText = `${e.currentTime.toFixed(0)} / ${frames
+                    } frames (${((e.currentTime / frames) * 100).toFixed(2)}%)`;
+            };
 
-        rec.start();
+            async function proceedFrame() {
+                let progress = (currentFrame / frames) * 100;
+                animation.innerHTML = `Rendering frames... ${currentFrame} / ${frames} ${progress.toFixed(
+                    2
+                )}%`;
+
+                await l.goToAndStop(currentFrame, true);
+                canvas.toBlob((blob) => {
+                    pngBlobs.push(blob)
+
+                    currentFrame++;
+                    if (currentFrame <= frames) {
+                        setTimeout(proceedFrame, 0);
+                    }
+                    else {
+                        animation.innerHTML = `Done!`;
+                        exportPngFrames(pngBlobs, name);
+                    }
+                });
+            }
+
+            proceedFrame();
+        } else {
+            const chunks = [];
+            const stream = canvas.captureStream(
+                framerate.value ? framerate.value : l.frameRate
+            );
+            const rec = new MediaRecorder(stream, {
+                mimeType: mimetype.value,
+                videoBitsPerSecond: bitrate.value * 1024,
+            });
+
+            rec.ondataavailable = (e) => chunks.push(e.data);
+            rec.onstop = (e) =>
+                exportFile(new Blob(chunks, { type: mimetype.value }), name);
+            l.onComplete = () => {
+                progress.innerText = "Done!";
+                rec.stop();
+            };
+
+            l.onEnterFrame = (e) => {
+                progress.innerText = `${e.currentTime.toFixed(0)} / ${e.totalTime
+                    } frames (${((e.currentTime / e.totalTime) * 100).toFixed(2)}%)`;
+            };
+
+            rec.start();
+        }
     }
 
     function initLottie() {
@@ -154,7 +196,7 @@ async function recorder(json, name, tgsLink, { w, h } = {}) {
             lottieApi = rLottieShim;
         }
 
-        return lottieApi.loadAnimation({
+        const options = {
             renderer: "canvas",
             loop: false,
             autoplay: false,
@@ -164,8 +206,35 @@ async function recorder(json, name, tgsLink, { w, h } = {}) {
                 clearCanvas: true,
             },
             size: canvas.width,
-        });
+        }
+
+
+
+        if (lottieApi === rLottieShim && document.getElementById("usecolor").checked === true) {
+            const color = document.getElementById("color").value;
+
+            const r = parseInt(color.substr(1, 2), 16);
+            const g = parseInt(color.substr(3, 2), 16);
+            const b = parseInt(color.substr(5, 2), 16);
+
+            options.customColor = [r, g, b];
+        }
+
+        return lottieApi.loadAnimation(options);
     }
+}
+
+function exportPngFrames(blobs, name) {
+    const zip = new JSZip();
+    const folder = zip.folder(name);
+    blobs.forEach((blob, i) => {
+        folder.file(`${i}.png`, blob);
+    });
+
+    folder.generateAsync({ type: "blob" }).then((content) => {
+        exportFile(content, name);
+    }
+    );
 }
 
 function exportFile(blob, name) {
@@ -173,15 +242,19 @@ function exportFile(blob, name) {
     resultContainer.className = "result-block";
     results.appendChild(resultContainer);
 
-    const vid = document.createElement("video");
-    vid.src = URL.createObjectURL(blob);
-    vid.controls = true;
-    resultContainer.appendChild(vid);
+    const objUrl = URL.createObjectURL(blob);
+
+    if (blob.type.startsWith("video/")) {
+        const vid = document.createElement("video");
+        vid.src = objUrl;
+        vid.controls = true;
+        resultContainer.appendChild(vid);
+    }
 
     const a = document.createElement("a");
     a.className = "button";
     a.download = name + extension.value;
-    a.href = vid.src;
+    a.href = objUrl;
     a.textContent = "Save";
     resultContainer.appendChild(a);
 }
@@ -315,13 +388,24 @@ function loadFormats() {
     f.forEach((format) => {
         const option = document.createElement("option");
         option.value = format[0];
-        option.textContent = `${format[1].toUpperCase()} ${
-            format[2] ? `(${format[2]})` : ""
-        }`;
+        option.textContent = `${format[1].toUpperCase()} ${format[2] ? `(${format[2]})` : ""
+            }`;
         formats.appendChild(option);
     });
 
+    // zip png
+    const option = document.createElement("option");
+    option.value = "image/png";
+    option.textContent = "PNG frames (zip)";
+    formats.appendChild(option);
+
     formats.addEventListener("change", () => {
+        if (formats.value === "image/png") {
+            mimetype.value = "image/png";
+            extension.value = ".zip";
+            return;
+        }
+
         mimetype.value = formats.value;
         extension.value = "." + f.find((x) => x[0] === formats.value)[1];
     });

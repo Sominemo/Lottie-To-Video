@@ -9,6 +9,7 @@
     <meta name="description" content="Convert Lottie animations and Telegram stickers to videos in browser">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.10.1/lottie_canvas.min.js"></script>
     <script src="rlottie-dist/main.js"></script>
+    <script src="jszip-dist/main.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -108,6 +109,13 @@
             <td>Video Bitrate:</td>
             <td>
                 <input type="number" id="bitrate" value="5120" style="width: 100px;"> kbps
+            </td>
+        </tr>
+        <tr>
+            <td>Adaptive TGS Color (rLottie):</td>
+            <td>
+                <input type="color" id="color" style="width: 100px;" oninput="document.getElementById('usecolor').checked=true">
+                <label for="usecolor"><input type="checkbox" id="usecolor"> Enabled</label>
             </td>
         </tr>
         <tr>
